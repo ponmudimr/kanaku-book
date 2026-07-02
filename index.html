@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kanaku Book</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6e1b20">
+<link rel="icon" type="image/png" href="icon-192.png">
+<!-- iOS "Add to Home Screen" support -->
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kanaku">
+
+<style>
+  :root {
+    --maroon: #6e1b20;
+    --maroon-dark: #551216;
+    --paper: #f7f0e3;
+    --paper-card: #fffbf2;
+    --ink: #33291f;
+    --ink-soft: #7a6f60;
+    --line: #e5d9c3;
+    --rule: #efe4cd;
+    --green: #2e7d4f;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+    font-size: 16px;
+  }
+
+  body {
+    min-height: 100dvh;
+    /* faint paper texture: soft ruled background */
+    background-image: repeating-linear-gradient(
+      to bottom, transparent, transparent 31px, rgba(110, 27, 32, 0.045) 31px, rgba(110, 27, 32, 0.045) 32px
+    );
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  h1, h2, .brand { font-family: Georgia, "Times New Roman", serif; }
+
+  /* ---------- Login ---------- */
+  #screen-login {
+    min-height: 100dvh;
+    padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  #screen-login.active { display: flex; }
+
+  /* ---------- Opening splash ---------- */
+  #splash {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 38%, #82242a 0%, var(--maroon) 45%, var(--maroon-dark) 100%);
+    transition: opacity 0.45s ease;
+  }
+  #splash.hide { opacity: 0; pointer-events: none; }
+  .splash-inner { text-align: center; }
+  .splash-icon {
+    width: 96px; height: 96px;
+    border-radius: 22px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    animation: splash-pop 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  }
+  .splash-title {
+    margin-top: 18px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--paper);
+    letter-spacing: 1px;
+    animation: splash-rise 0.6s 0.35s ease both;
+  }
+  .splash-sub {
+    margin-top: 4px;
+    font-size: 14px;
+    color: rgba(247, 240, 227, 0.75);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    animation: splash-rise 0.6s 0.5s ease both;
+  }
+  .splash-credit {
+    position: absolute;
+    bottom: calc(30px + env(safe-area-inset-bottom));
+    font-size: 17px;
+    font-style: italic;
+    letter-spacing: 0.02em;
+    color: rgba(247, 240, 227, 0.85);
+    animation: splash-rise 0.7s 0.85s ease both;
+  }
+  .splash-credit b { font-weight: 700; font-size: 19px; color: var(--paper); }
+  @keyframes splash-pop {
+    from { transform: scale(0.3); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  @keyframes splash-rise {
+    from { transform: translateY(14px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+
+  .dev-credit {
+    position: fixed;
+    left: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .login-brand { text-align: center; margin-bottom: 28px; }
+  .login-brand img {
+    width: 84px; height: 84px; border-radius: 20px;
+    box-shadow: 0 6px 18px rgba(85, 18, 22, 0.35);
+  }
+  .login-brand h1 { margin: 14px 0 4px; font-size: 30px; color: var(--maroon); letter-spacing: 0.5px; }
+  .login-brand p { margin: 0; color: var(--ink-soft); font-size: 14px; }
+
+  .card {
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(85, 18, 22, 0.06);
+  }
+
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+  label:first-child { margin-top: 0; }
+
+  input[type="text"], input[type="password"], input[type="date"] {
+    width: 100%;
+    padding: 14px;
+    font-size: 17px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink);
+    outline: none;
+  }
+  input:focus { border-color: var(--maroon); }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--maroon);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--maroon-dark);
+  }
+  .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--maroon-dark); }
+  .btn:disabled { opacity: 0.45; box-shadow: none; transform: none; }
+
+  .error-msg {
+    display: none;
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #fdecea;
+    color: #a4262c;
+    font-size: 14px;
+    text-align: center;
+  }
+  .error-msg.show { display: block; }
+
+  /* ---------- Main ---------- */
+  header.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--maroon);
+    color: #fff;
+    padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(85, 18, 22, 0.3);
+  }
+  header .brand { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  header .who { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+  .logout-btn {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+
+  main { max-width: 520px; margin: 0 auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
+
+  /* ---------- Tabs ---------- */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--rule);
+    border-radius: 12px;
+    padding: 5px;
+  }
+  .tab {
+    flex: 1;
+    padding: 11px 6px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+  }
+  .tab.active {
+    background: var(--maroon);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(110, 27, 32, 0.3);
+  }
+
+  select {
+    width: 100%;
+    padding: 14px;
+    font-size: 17px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9'><path d='M1 1l6 6 6-6' fill='none' stroke='%236e1b20' stroke-width='2' stroke-linecap='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  select:focus { border-color: var(--maroon); }
+
+  /* ---------- Ledger totals ---------- */
+  .total-card {
+    margin-top: 18px;
+    background: var(--maroon);
+    color: #fff;
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    text-align: center;
+    box-shadow: 0 4px 14px rgba(110, 27, 32, 0.35);
+  }
+  .total-card .t-label { font-size: 13px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.08em; }
+  .total-card .t-amt { font-size: 34px; font-weight: 800; font-family: Georgia, serif; margin-top: 4px; }
+  .total-card .t-sub { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+
+  .mt-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 14px;
+    border: none;
+    border-bottom: 1px solid var(--rule);
+    background: transparent;
+    font-size: 15px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    color: var(--ink);
+  }
+  .mt-row:last-child { border-bottom: none; }
+  .mt-row .m-name { font-weight: 600; flex: 1; }
+  .mt-row .m-count { color: var(--ink-soft); font-size: 12.5px; white-space: nowrap; }
+  .mt-row .m-amt { font-weight: 700; color: var(--maroon); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .mt-row .m-arrow { color: var(--ink-soft); font-size: 13px; }
+
+  .range-row { display: flex; align-items: center; gap: 8px; }
+  .range-row input { flex: 1; min-width: 0; }
+  .range-sep { color: var(--ink-soft); font-size: 13px; }
+
+  /* ---------- Entries table ---------- */
+  .entry-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .entry-table th {
+    background: var(--rule);
+    color: var(--maroon);
+    text-align: left;
+    padding: 10px 12px;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .entry-table td { padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .entry-table tr:last-child td { border-bottom: none; }
+  .entry-table th.num, .entry-table td.amt {
+    text-align: right;
+    font-weight: 700;
+    color: var(--maroon);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .entry-table td.by { color: var(--ink-soft); font-size: 12.5px; }
+  .entry-table td.d { white-space: nowrap; }
+  .entry-table .note { display: block; color: var(--ink-soft); font-size: 12px; font-weight: 400; }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 18px 2px 10px;
+  }
+  .section-title h2 { margin: 0; font-size: 16px; color: var(--maroon); }
+  .icon-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 18px; color: var(--maroon); padding: 4px 8px;
+  }
+
+  .member-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .member-btn {
+    padding: 14px 6px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ink);
+    background: var(--paper-card);
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    overflow-wrap: break-word;
+    transition: transform 0.06s ease;
+  }
+  .member-btn:active { transform: scale(0.96); }
+  .member-btn.selected {
+    background: var(--maroon);
+    border-color: var(--maroon-dark);
+    color: #fff;
+    box-shadow: 0 3px 8px rgba(110, 27, 32, 0.35);
+  }
+  .member-btn.add {
+    border-style: dashed;
+    color: var(--maroon);
+    background: transparent;
+    font-weight: 700;
+  }
+
+  .amount-wrap { position: relative; margin-top: 4px; }
+  .amount-wrap .rupee {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    font-size: 26px; font-weight: 700; color: var(--maroon);
+    font-family: Georgia, serif;
+  }
+  #amount {
+    width: 100%;
+    padding: 16px 16px 16px 44px;
+    font-size: 28px;
+    font-weight: 700;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+    color: var(--ink);
+    outline: none;
+  }
+  #amount:focus { border-color: var(--maroon); }
+
+  .status-line {
+    min-height: 20px;
+    margin: 10px 2px 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+  .status-line b { color: var(--maroon); }
+
+  /* ---------- Recent entries: ledger look ---------- */
+  .ledger {
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .ledger-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 15px;
+  }
+  .ledger-row:last-child { border-bottom: none; }
+  .ledger-row .l-date { color: var(--ink-soft); font-size: 12.5px; white-space: nowrap; }
+  .ledger-row .l-name { font-weight: 600; flex: 1; min-width: 0; }
+  .ledger-row .l-note { color: var(--ink-soft); font-size: 12.5px; display: block; font-weight: 400; }
+  .ledger-row .l-amt { font-weight: 700; color: var(--maroon); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ledger-empty { padding: 20px; text-align: center; color: var(--ink-soft); font-size: 14px; }
+  .ledger-row .l-del {
+    align-self: center;
+    border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 15px;
+    padding: 6px 4px 6px 8px;
+    margin: -6px -4px -6px 0;
+    cursor: pointer;
+  }
+  .ledger-row .l-del:active { color: #a4262c; }
+
+  .fineprint { margin: 10px 4px 0; font-size: 12px; color: var(--ink-soft); text-align: center; }
+
+  /* ---------- Save confirmation overlay ---------- */
+  #save-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: none;
+    align-items: center; justify-content: center;
+    background: rgba(51, 41, 31, 0.45);
+    backdrop-filter: blur(2px);
+  }
+  #save-overlay.show { display: flex; }
+  .save-pop {
+    background: var(--paper-card);
+    border-radius: 20px;
+    padding: 30px 36px;
+    text-align: center;
+    animation: pop-in 0.28s cubic-bezier(0.2, 1.4, 0.4, 1);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    max-width: 300px;
+  }
+  @keyframes pop-in {
+    from { transform: scale(0.6); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .save-pop .amt { font-size: 26px; font-weight: 800; color: var(--maroon); margin-top: 10px; font-family: Georgia, serif; }
+  .save-pop .who-line { color: var(--ink-soft); font-size: 15px; margin-top: 2px; }
+  .check-svg { width: 76px; height: 76px; }
+  .check-svg circle {
+    fill: none; stroke: var(--green); stroke-width: 3;
+    stroke-dasharray: 166; stroke-dashoffset: 166;
+    animation: draw 0.5s ease forwards;
+  }
+  .check-svg path {
+    fill: none; stroke: var(--green); stroke-width: 4;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 48; stroke-dashoffset: 48;
+    animation: draw 0.35s 0.35s ease forwards;
+  }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  /* ---------- Add member overlay ---------- */
+  #member-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: none;
+    align-items: flex-end; justify-content: center;
+    background: rgba(51, 41, 31, 0.45);
+  }
+  #member-overlay.show { display: flex; }
+  .sheet {
+    background: var(--paper-card);
+    width: 100%;
+    max-width: 520px;
+    border-radius: 20px 20px 0 0;
+    padding: 22px 20px calc(26px + env(safe-area-inset-bottom));
+    animation: slide-up 0.22s ease;
+  }
+  @keyframes slide-up { from { transform: translateY(40%); } to { transform: translateY(0); } }
+  .sheet h2 { margin: 0 0 14px; font-size: 18px; color: var(--maroon); }
+  .sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .sheet-actions .btn { margin-top: 0; flex: 1; }
+  .btn.ghost { background: transparent; color: var(--maroon); border: 1.5px solid var(--maroon); box-shadow: none; }
+  .btn.danger { background: #a4262c; box-shadow: 0 3px 0 #7c1216; }
+
+  #delete-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: none;
+    align-items: flex-end; justify-content: center;
+    background: rgba(51, 41, 31, 0.45);
+  }
+  #delete-overlay.show { display: flex; }
+  .del-details {
+    background: #fdecea;
+    border: 1px solid #f3c8c5;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .del-details b { color: #a4262c; }
+
+  /* ---------- Config warning banner ---------- */
+  #config-warning {
+    display: none;
+    background: #b3541e;
+    color: #fff;
+    padding: 10px 16px;
+    font-size: 13px;
+    text-align: center;
+  }
+  #config-warning.show { display: block; }
+
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2.5px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: -4px;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- Opening splash -->
+<div id="splash">
+  <div class="splash-inner">
+    <img src="icon-192.png" alt="" class="splash-icon">
+    <div class="splash-title">Kanaku Book</div>
+    <div class="splash-sub">Payment ledger</div>
+  </div>
+  <div class="splash-credit">Designed by <b>Ponmudi MR</b></div>
+</div>
+
+<div id="config-warning">⚠️ Setup needed: paste your Apps Script web app URL into index.html (see README).</div>
+
+<!-- ================= LOGIN ================= -->
+<section id="screen-login" class="screen">
+  <div class="login-brand">
+    <img src="icon-192.png" alt="Kanaku Book">
+    <h1>Kanaku Book</h1>
+    <p>Payment ledger</p>
+  </div>
+  <form class="card" id="login-form">
+    <label for="username">Username</label>
+    <input type="text" id="username" autocomplete="username" autocapitalize="none" required>
+    <label for="password">Password</label>
+    <input type="password" id="password" autocomplete="current-password" required>
+    <button type="submit" class="btn" id="login-btn">Log in</button>
+    <div class="error-msg" id="login-error"></div>
+  </form>
+  <div class="dev-credit">Developed by Ponmudi MR · <span id="app-version">v13</span></div>
+</section>
+
+<!-- ================= MAIN ================= -->
+<section id="screen-main" class="screen">
+  <header class="topbar">
+    <div>
+      <div class="brand">₹ Kanaku Book</div>
+      <div class="who" id="who"></div>
+      <div class="who">v13</div>
+    </div>
+    <button class="logout-btn" id="logout-btn">Log out</button>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <button type="button" class="tab active" id="tab-entry">✍️ New entry</button>
+      <button type="button" class="tab" id="tab-ledger">📖 Ledger</button>
+    </div>
+
+    <!-- ===== New entry view ===== -->
+    <div id="view-entry">
+    <div class="section-title">
+      <h2>Who is taking money?</h2>
+      <button class="icon-btn" id="refresh-members" title="Reload member list">⟳</button>
+    </div>
+    <div class="member-grid" id="member-grid"></div>
+
+    <div class="section-title"><h2>Amount</h2></div>
+    <div class="amount-wrap">
+      <span class="rupee">₹</span>
+      <input type="text" id="amount" inputmode="decimal" placeholder="0" autocomplete="off">
+    </div>
+
+    <label for="note" style="margin-top:16px">Note (optional)</label>
+    <input type="text" id="note" placeholder="e.g. advance, diesel, materials" autocomplete="off">
+
+    <label for="entry-date" style="margin-top:16px">Date</label>
+    <input type="date" id="entry-date">
+
+    <button class="btn" id="save-btn" disabled>Save entry</button>
+    <div class="status-line" id="status-line">Select a member and enter an amount</div>
+
+    <div class="section-title" style="margin-top:26px"><h2>Recent entries</h2></div>
+    <div class="ledger" id="recent-list"></div>
+    <p class="fineprint">Last 10 entries by everyone. The full ledger is in the 📖 Ledger tab and the Google Sheet.</p>
+    </div><!-- /view-entry -->
+
+    <!-- ===== Ledger view ===== -->
+    <div id="view-ledger" hidden>
+      <div class="section-title"><h2>Search the ledger</h2></div>
+      <div class="card">
+        <label for="f-member">Member</label>
+        <select id="f-member"><option value="">All members</option></select>
+
+        <label for="f-month">Month</label>
+        <input type="month" id="f-month">
+
+        <label for="f-from">Or a date range (optional)</label>
+        <div class="range-row">
+          <input type="date" id="f-from" aria-label="From date">
+          <span class="range-sep">to</span>
+          <input type="date" id="f-to" aria-label="To date">
+        </div>
+
+        <button type="button" class="btn" id="search-btn">Search</button>
+      </div>
+
+      <div id="ledger-results" hidden>
+        <div class="total-card">
+          <div class="t-label" id="total-label">Total given</div>
+          <div class="t-amt" id="total-amt">₹0</div>
+          <div class="t-sub" id="total-sub"></div>
+        </div>
+
+        <div class="section-title" id="member-totals-title"><h2>Total per member</h2></div>
+        <div class="ledger" id="member-totals"></div>
+
+        <div class="section-title"><h2>Entries</h2></div>
+        <div class="ledger" id="entries-list"></div>
+      </div>
+      <div class="status-line" id="ledger-status"></div>
+    </div><!-- /view-ledger -->
+  </main>
+</section>
+
+<!-- Save confirmation -->
+<div id="save-overlay">
+  <div class="save-pop">
+    <svg class="check-svg" viewBox="0 0 56 56">
+      <circle cx="28" cy="28" r="26"/>
+      <path d="M16 29 l8 8 l16 -17"/>
+    </svg>
+    <div class="amt" id="saved-amt"></div>
+    <div class="who-line" id="saved-who"></div>
+  </div>
+</div>
+
+<!-- Delete confirmation -->
+<div id="delete-overlay">
+  <div class="sheet">
+    <h2>Delete this entry?</h2>
+    <div class="del-details" id="del-details"></div>
+    <label for="delete-word">Type <b>delete</b> to confirm</label>
+    <input type="text" id="delete-word" autocomplete="off" autocapitalize="none" placeholder="delete">
+    <div class="sheet-actions">
+      <button type="button" class="btn ghost" id="cancel-delete">Cancel</button>
+      <button type="button" class="btn danger" id="confirm-delete" disabled>Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add member -->
+<div id="member-overlay">
+  <div class="sheet">
+    <h2>Add a new member</h2>
+    <input type="text" id="new-member-name" placeholder="Member name" autocomplete="off" autocapitalize="words">
+    <div class="sheet-actions">
+      <button class="btn ghost" id="cancel-member">Cancel</button>
+      <button class="btn" id="confirm-member">Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   CONFIG — paste your Google Apps Script web app URL between the quotes.
+   It looks like: https://script.google.com/macros/s/AKfycb....../exec
+   ===================================================================== */
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxsdjIyGqQZnZeTPX5tO6bwh71zzuq4N7LpWsgx937noIWK28CgFR0kDQaQv0QOBrxvwA/exec';
+
+/* ---------------- helpers ---------------- */
+var $ = function (id) { return document.getElementById(id); };
+var inr = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
+
+function configured() {
+  return SCRIPT_URL.indexOf('https://') === 0;
+}
+
+/* JSONP: for reads (login, getMembers). Injects a <script> tag with a
+   ?callback= param; Apps Script replies with callbackName({...}). */
+function jsonp(params, timeoutMs) {
+  timeoutMs = timeoutMs || 15000;
+  return new Promise(function (resolve, reject) {
+    if (!configured()) { reject(new Error('App not set up yet — see README')); return; }
+    var cbName = 'kanaku_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
+    var script = document.createElement('script');
+    var timer = setTimeout(function () { cleanup(); reject(new Error('No answer from Google. Check your internet.')); }, timeoutMs);
+    function cleanup() {
+      clearTimeout(timer);
+      // leave a self-deleting no-op (not delete) so a reply that arrives
+      // after the timeout doesn't throw "cbName is not a function"
+      window[cbName] = function () { delete window[cbName]; };
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function (data) { cleanup(); resolve(data); };
+    var qs = Object.keys(params).map(function (k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    script.src = SCRIPT_URL + '?' + qs + '&callback=' + cbName;
+    script.onerror = function () { cleanup(); reject(new Error('No answer from Google. Check your internet.')); };
+    document.body.appendChild(script);
+  });
+}
+
+/* Fire-and-forget write: no-cors means we cannot read the response,
+   so the UI proceeds optimistically. Body is text/plain JSON. */
+function postWrite(body) {
+  if (!configured()) return Promise.reject(new Error('App not set up yet'));
+  return fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+}
+
+/* ---------------- session ---------------- */
+/* localStorage (not sessionStorage) so the login survives closing the app;
+   only the Log out button clears it. */
+function currentUser() { return localStorage.getItem('kanaku_user') || ''; }
+
+function showScreen(name) {
+  $('screen-login').classList.toggle('active', name === 'login');
+  $('screen-main').classList.toggle('active', name === 'main');
+}
+
+function enterApp() {
+  $('who').textContent = 'Logged in as ' + currentUser();
+  showScreen('main');
+  renderMembers(getCachedMembers());
+  renderRecent();
+  setToday();
+  updateSaveState();
+  loadMembers();
+  loadRecent();
+}
+
+/* ---------------- login ---------------- */
+$('login-form').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  var btn = $('login-btn');
+  var errBox = $('login-error');
+  errBox.classList.remove('show');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Checking…';
+
+  jsonp({
+    action: 'login',
+    username: $('username').value.trim(),
+    password: $('password').value
+  }).then(function (res) {
+    if (res && res.ok) {
+      localStorage.setItem('kanaku_user', res.user);
+      $('password').value = '';
+      enterApp();
+    } else {
+      errBox.textContent = (res && res.error) || 'Wrong username or password';
+      errBox.classList.add('show');
+    }
+  }).catch(function (err) {
+    errBox.textContent = err.message;
+    errBox.classList.add('show');
+  }).finally(function () {
+    btn.disabled = false;
+    btn.textContent = 'Log in';
+  });
+});
+
+$('logout-btn').addEventListener('click', function () {
+  localStorage.removeItem('kanaku_user');
+  selectedMember = null;
+  showScreen('login');
+});
+
+/* ---------------- members ---------------- */
+var selectedMember = null;
+
+function getCachedMembers() {
+  try { return JSON.parse(localStorage.getItem('kanaku_members')) || []; }
+  catch (e) { return []; }
+}
+
+function loadMembers() {
+  jsonp({ action: 'getMembers' }).then(function (res) {
+    if (res && res.ok && res.members) {
+      localStorage.setItem('kanaku_members', JSON.stringify(res.members));
+      renderMembers(res.members);
+    }
+  }).catch(function () { /* keep showing cached list */ });
+}
+
+function renderMembers(members) {
+  var grid = $('member-grid');
+  grid.innerHTML = '';
+  members.forEach(function (name) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'member-btn' + (name === selectedMember ? ' selected' : '');
+    b.textContent = name;
+    b.addEventListener('click', function () {
+      selectedMember = name;
+      grid.querySelectorAll('.member-btn').forEach(function (el) { el.classList.remove('selected'); });
+      b.classList.add('selected');
+      updateSaveState();
+      $('amount').focus();
+    });
+    grid.appendChild(b);
+  });
+  var add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'member-btn add';
+  add.textContent = '+ Add';
+  add.addEventListener('click', function () {
+    $('new-member-name').value = '';
+    $('member-overlay').classList.add('show');
+    $('new-member-name').focus();
+  });
+  grid.appendChild(add);
+}
+
+$('refresh-members').addEventListener('click', loadMembers);
+$('cancel-member').addEventListener('click', function () {
+  $('member-overlay').classList.remove('show');
+});
+$('confirm-member').addEventListener('click', function () {
+  var name = $('new-member-name').value.trim();
+  if (!name) return;
+  var members = getCachedMembers();
+  var exists = members.some(function (m) { return m.toLowerCase() === name.toLowerCase(); });
+  if (!exists) {
+    postWrite({ action: 'addMember', name: name }).catch(function () {});
+    members.push(name);
+    localStorage.setItem('kanaku_members', JSON.stringify(members));
+  }
+  selectedMember = name;
+  renderMembers(members);
+  updateSaveState();
+  $('member-overlay').classList.remove('show');
+});
+
+/* ---------------- entry form ---------------- */
+function setToday() {
+  var d = new Date();
+  var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+  $('entry-date').value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
+function parseAmount() {
+  var raw = $('amount').value.replace(/[^\d.]/g, '');
+  var n = parseFloat(raw);
+  return (isFinite(n) && n > 0) ? n : null;
+}
+
+function updateSaveState() {
+  var amt = parseAmount();
+  var ok = !!selectedMember && amt !== null && recentLoaded && !pendingDelete;
+  $('save-btn').disabled = !ok;
+  var s = $('status-line');
+  if (pendingDelete) s.textContent = 'Deleting entry… new entries unlock once it is removed';
+  else if (!recentLoaded) s.textContent = 'Loading recent entries… saving unlocks once they appear';
+  else if (!selectedMember) s.textContent = 'Select a member and enter an amount';
+  else if (amt === null) s.innerHTML = 'Enter the amount for <b>' + escapeHtml(selectedMember) + '</b>';
+  else s.innerHTML = 'Give <b>₹' + inr.format(amt) + '</b> to <b>' + escapeHtml(selectedMember) + '</b>';
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+$('amount').addEventListener('input', updateSaveState);
+
+$('save-btn').addEventListener('click', function () {
+  var amt = parseAmount();
+  if (!selectedMember || amt === null) return;
+
+  var entry = {
+    action: 'addEntry',
+    id: 'e' + Date.now() + '-' + Math.floor(Math.random() * 1e6),
+    date: $('entry-date').value,
+    name: selectedMember,
+    amount: amt,
+    note: $('note').value.trim(),
+    loggedBy: currentUser()
+  };
+  postWrite(entry).catch(function () {});
+
+  // remember locally as an offline fallback for the "Recent entries" list
+  var recent = getRecent();
+  recent.unshift({ id: entry.id, date: entry.date, name: entry.name, amount: amt, note: entry.note, by: entry.loggedBy, ts: Date.now() });
+  localStorage.setItem('kanaku_recent', JSON.stringify(recent.slice(0, 20)));
+
+  // show the new entry at the top immediately; the sheet catches up shortly
+  if (recentServer !== null) {
+    recentServer.unshift({ id: entry.id, date: entry.date, name: entry.name, amount: amt, note: entry.note, by: entry.loggedBy });
+    recentServer = recentServer.slice(0, 10);
+  }
+
+  showSaveAnimation(entry.name, amt);
+  renderRecent();
+  ledgerEntries = null; // the Ledger tab refetches next time it opens
+  setTimeout(loadRecent, 8000); // re-sync once the fire-and-forget write has landed
+
+  // reset for the next entry
+  $('amount').value = '';
+  $('note').value = '';
+  setToday();
+  selectedMember = null;
+  renderMembers(getCachedMembers());
+  updateSaveState();
+});
+
+function showSaveAnimation(name, amt) {
+  $('saved-amt').textContent = '₹' + inr.format(amt);
+  $('saved-who').textContent = 'given to ' + name;
+  var overlay = $('save-overlay');
+  // restart the SVG stroke animation
+  var svg = overlay.querySelector('.check-svg');
+  var clone = svg.cloneNode(true);
+  svg.parentNode.replaceChild(clone, svg);
+  overlay.classList.add('show');
+  if (navigator.vibrate) navigator.vibrate(40);
+  setTimeout(function () { overlay.classList.remove('show'); }, 1500);
+}
+
+/* ---------------- recent entries ---------------- */
+/* Shows the last 10 entries from the sheet (all users). Until the fetch
+   returns — or if it fails — falls back to entries saved from this phone.
+   Saving a new entry is locked until the first load succeeds, so entries
+   can only be saved when the sheet is actually reachable. */
+var recentServer = null;   // last 10 entries from the sheet
+var recentLoaded = false;  // true once the script has answered at least once
+
+function getRecent() {
+  try { return JSON.parse(localStorage.getItem('kanaku_recent')) || []; }
+  catch (e) { return []; }
+}
+
+function loadRecent() {
+  if (!configured()) return;
+  jsonp({ action: 'getEntries', limit: 10 }).then(function (res) {
+    if (res && res.ok && res.entries) {
+      recentServer = res.entries.slice(0, 10);
+      renderRecent();
+    }
+    // any answer proves the sheet is reachable — unlock saving
+    recentLoaded = true;
+    updateSaveState();
+  }).catch(function () {
+    // keep whatever is showing and retry until the first load succeeds
+    if (!recentLoaded) setTimeout(loadRecent, 10000);
+  });
+}
+
+function renderRecent() {
+  var list = $('recent-list');
+  var recent = (recentServer !== null ? recentServer : getRecent()).slice(0, 10);
+  renderRecent.items = recent; // referenced by the delete handler below
+  if (!recent.length) {
+    list.innerHTML = '<div class="ledger-empty">No entries yet. Saved entries will appear here.</div>';
+    return;
+  }
+  list.innerHTML = recent.map(function (r, i) {
+    var sub = [];
+    if (r.note) sub.push(escapeHtml(r.note));
+    if (r.by) sub.push('by ' + escapeHtml(r.by));
+    return '<div class="ledger-row">' +
+      '<span class="l-date">' + escapeHtml(ddmmyyyy(r.date)) + '</span>' +
+      '<span class="l-name">' + escapeHtml(r.name) +
+        (sub.length ? '<span class="l-note">' + sub.join(' · ') + '</span>' : '') +
+      '</span>' +
+      '<span class="l-amt">₹' + inr.format(r.amount) + '</span>' +
+      '<button type="button" class="l-del" data-i="' + i + '" aria-label="Delete entry">✕</button>' +
+    '</div>';
+  }).join('');
+}
+
+/* delete a wrongly entered entry — must type "delete" to confirm */
+var deleteTarget = null;
+
+$('recent-list').addEventListener('click', function (ev) {
+  var btn = ev.target.closest ? ev.target.closest('.l-del') : null;
+  if (!btn) return;
+  var item = (renderRecent.items || [])[+btn.getAttribute('data-i')];
+  if (!item) return;
+
+  deleteTarget = item;
+  $('del-details').innerHTML = '<b>' + escapeHtml(item.name) + ' — ₹' + inr.format(item.amount) + '</b>' +
+    (item.date ? ' on ' + escapeHtml(ddmmyyyy(item.date)) : '') +
+    (item.note ? '<br>' + escapeHtml(item.note) : '');
+  $('delete-word').value = '';
+  $('confirm-delete').disabled = true;
+  $('delete-overlay').classList.add('show');
+  $('delete-word').focus();
+});
+
+$('delete-word').addEventListener('input', function () {
+  $('confirm-delete').disabled = $('delete-word').value.trim().toLowerCase() !== 'delete';
+});
+$('delete-word').addEventListener('keydown', function (ev) {
+  if (ev.key === 'Enter' && !$('confirm-delete').disabled) $('confirm-delete').click();
+});
+$('cancel-delete').addEventListener('click', function () {
+  deleteTarget = null;
+  $('delete-overlay').classList.remove('show');
+});
+
+$('confirm-delete').addEventListener('click', function () {
+  var item = deleteTarget;
+  if (!item || $('delete-word').value.trim().toLowerCase() !== 'delete') return;
+  deleteTarget = null;
+  $('delete-overlay').classList.remove('show');
+
+  postWrite({
+    action: 'deleteEntry',
+    id: item.id || '',
+    date: item.date,
+    name: item.name,
+    amount: item.amount
+  }).catch(function () {});
+
+  var match = function (e) {
+    return item.id ? e.id === item.id
+      : (e.date === item.date && e.name === item.name && e.amount === item.amount);
+  };
+  if (recentServer !== null) {
+    var removed = false; // remove only one, in case of identical entries
+    recentServer = recentServer.filter(function (e) {
+      if (!removed && match(e)) { removed = true; return false; }
+      return true;
+    });
+  }
+  localStorage.setItem('kanaku_recent', JSON.stringify(getRecent().filter(function (e) { return !match(e); })));
+  ledgerEntries = null; // totals change, so the Ledger tab refetches
+  renderRecent();
+
+  // block new entries until the sheet confirms this delete has landed
+  pendingDelete = item;
+  updateSaveState();
+  setTimeout(checkDeleteLanded, 4000);
+});
+
+/* Polls the sheet until the deleted entry is gone, then unlocks saving.
+   Gives up after 5 tries (~20s) so a duplicate old row can't lock the
+   app forever — by then the delete has long since landed anyway. */
+var pendingDelete = null;
+var deleteChecks = 0;
+
+function checkDeleteLanded() {
+  if (!pendingDelete) return;
+  jsonp({ action: 'getEntries', limit: 10 }).then(function (res) {
+    if (res && res.ok && res.entries) {
+      var still = res.entries.some(function (e) {
+        return pendingDelete.id ? e.id === pendingDelete.id
+          : (e.date === pendingDelete.date && e.name === pendingDelete.name && e.amount === pendingDelete.amount);
+      });
+      deleteChecks++;
+      if (!still || deleteChecks >= 5) {
+        pendingDelete = null;
+        deleteChecks = 0;
+        recentServer = res.entries.slice(0, 10);
+        renderRecent();
+        updateSaveState();
+        return;
+      }
+    }
+    setTimeout(checkDeleteLanded, 4000);
+  }).catch(function () { setTimeout(checkDeleteLanded, 4000); });
+}
+
+/* ---------------- ledger view ---------------- */
+var ledgerEntries = null; // last fetched entries for the chosen period
+
+function setView(name) {
+  $('tab-entry').classList.toggle('active', name === 'entry');
+  $('tab-ledger').classList.toggle('active', name === 'ledger');
+  $('view-entry').hidden = name !== 'entry';
+  $('view-ledger').hidden = name !== 'ledger';
+  if (name === 'ledger') {
+    fillMemberFilter();
+    if (!$('f-month').value && !$('f-from').value && !$('f-to').value) {
+      var d = new Date();
+      $('f-month').value = d.getFullYear() + '-' + ((d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1));
+    }
+    if (ledgerEntries === null) doSearch();
+  }
+}
+$('tab-entry').addEventListener('click', function () { setView('entry'); });
+$('tab-ledger').addEventListener('click', function () { setView('ledger'); });
+
+function fillMemberFilter() {
+  var sel = $('f-member');
+  var keep = sel.value;
+  sel.innerHTML = '<option value="">All members</option>';
+  getCachedMembers().forEach(function (name) {
+    var o = document.createElement('option');
+    o.value = o.textContent = name;
+    sel.appendChild(o);
+  });
+  sel.value = keep;
+  if (sel.selectedIndex === -1) sel.selectedIndex = 0;
+}
+
+function ddmmyyyy(iso) { return iso ? iso.split('-').reverse().join('/') : ''; }
+
+/* A from/to range wins; otherwise the month; otherwise all time.
+   For a single day, set From and To to the same date. */
+function searchRange() {
+  var from = $('f-from').value;
+  var to = $('f-to').value;
+  if (from || to) {
+    // if the dates were entered backwards, quietly swap them
+    if (from && to && from > to) { var tmp = from; from = to; to = tmp; }
+    var label = (from && to && from === to) ? ddmmyyyy(from)
+      : (from ? ddmmyyyy(from) : 'start') + ' – ' + (to ? ddmmyyyy(to) : 'today');
+    return { from: from, to: to, label: label };
+  }
+  var month = $('f-month').value; // yyyy-mm
+  if (month) {
+    var y = +month.slice(0, 4), m = +month.slice(5, 7);
+    var last = new Date(y, m, 0).getDate();
+    var monthName = new Date(y, m - 1, 1).toLocaleString('en', { month: 'long' });
+    return { from: month + '-01', to: month + '-' + (last < 10 ? '0' : '') + last, label: monthName + ' ' + y };
+  }
+  return { from: '', to: '', label: 'All time' };
+}
+
+$('search-btn').addEventListener('click', doSearch);
+$('f-member').addEventListener('change', function () {
+  if (ledgerEntries !== null) renderLedger();
+});
+function clearMonth() { if ($('f-from').value || $('f-to').value) $('f-month').value = ''; }
+$('f-from').addEventListener('change', clearMonth);
+$('f-to').addEventListener('change', clearMonth);
+$('f-month').addEventListener('change', function () {
+  if ($('f-month').value) { $('f-from').value = ''; $('f-to').value = ''; }
+});
+
+function doSearch() {
+  var btn = $('search-btn');
+  var range = searchRange();
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Loading…';
+  $('ledger-status').textContent = '';
+
+  jsonp({ action: 'getEntries', from: range.from, to: range.to }, 25000)
+    .then(function (res) {
+      if (res && res.ok) {
+        ledgerEntries = res.entries || [];
+        renderLedger();
+      } else {
+        $('ledger-status').textContent = (res && res.error) || 'Could not load entries';
+      }
+    })
+    .catch(function (err) { $('ledger-status').textContent = err.message; })
+    .finally(function () {
+      btn.disabled = false;
+      btn.textContent = 'Search';
+    });
+}
+
+function renderLedger() {
+  var range = searchRange();
+  var member = $('f-member').value;
+  var entries = ledgerEntries.filter(function (e) {
+    return !member || e.name.toLowerCase() === member.toLowerCase();
+  });
+
+  $('ledger-results').hidden = false;
+
+  // grand total
+  var total = entries.reduce(function (s, e) { return s + e.amount; }, 0);
+  $('total-label').textContent = member ? 'Total to ' + member : 'Total given';
+  $('total-amt').textContent = '₹' + inr.format(total);
+  $('total-sub').textContent = entries.length + (entries.length === 1 ? ' entry' : ' entries') + ' · ' + range.label;
+
+  // per-member totals (only meaningful for "All members")
+  var mtWrap = $('member-totals');
+  var mtTitle = $('member-totals-title');
+  if (member) {
+    mtTitle.style.display = 'none';
+    mtWrap.style.display = 'none';
+  } else {
+    mtTitle.style.display = '';
+    mtWrap.style.display = '';
+    var byMember = {};
+    entries.forEach(function (e) {
+      var k = e.name;
+      if (!byMember[k]) byMember[k] = { total: 0, count: 0 };
+      byMember[k].total += e.amount;
+      byMember[k].count += 1;
+    });
+    var names = Object.keys(byMember).sort(function (a, b) { return byMember[b].total - byMember[a].total; });
+    if (!names.length) {
+      mtWrap.innerHTML = '<div class="ledger-empty">No entries in this period.</div>';
+    } else {
+      mtWrap.innerHTML = '';
+      names.forEach(function (n) {
+        var row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'mt-row';
+        row.innerHTML =
+          '<span class="m-name">' + escapeHtml(n) + '</span>' +
+          '<span class="m-count">' + byMember[n].count + (byMember[n].count === 1 ? ' entry' : ' entries') + '</span>' +
+          '<span class="m-amt">₹' + inr.format(byMember[n].total) + '</span>' +
+          '<span class="m-arrow">›</span>';
+        row.addEventListener('click', function () {
+          var sel = $('f-member');
+          // names that only exist in old entries aren't in the dropdown yet
+          var has = Array.prototype.some.call(sel.options, function (o) { return o.value === n; });
+          if (!has) {
+            var opt = document.createElement('option');
+            opt.value = opt.textContent = n;
+            sel.appendChild(opt);
+          }
+          sel.value = n;
+          renderLedger();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        mtWrap.appendChild(row);
+      });
+    }
+  }
+
+  // entries table: Date | (Member) | Amount | Given by, oldest first like a notebook
+  var list = $('entries-list');
+  if (!entries.length) {
+    list.innerHTML = '<div class="ledger-empty">No entries found for this search.</div>';
+  } else {
+    var sorted = entries.slice().sort(function (a, b) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    });
+    var showMember = !member;
+    var html = '<table class="entry-table"><thead><tr>' +
+      '<th>Date</th>' +
+      (showMember ? '<th>Member</th>' : '') +
+      '<th class="num">Amount</th>' +
+      '<th>Given by</th>' +
+    '</tr></thead><tbody>';
+    sorted.forEach(function (r) {
+      var note = r.note ? '<span class="note">' + escapeHtml(r.note) + '</span>' : '';
+      html += '<tr>' +
+        '<td class="d">' + escapeHtml(ddmmyyyy(r.date)) + (showMember ? '' : note) + '</td>' +
+        (showMember ? '<td>' + escapeHtml(r.name) + note + '</td>' : '') +
+        '<td class="amt">₹' + inr.format(r.amount) + '</td>' +
+        '<td class="by">' + escapeHtml(r.by) + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table>';
+    list.innerHTML = html;
+  }
+}
+
+/* ---------------- boot ---------------- */
+// opening splash: let the logo animation play, then fade into the app
+setTimeout(function () {
+  var splash = $('splash');
+  splash.classList.add('hide');
+  setTimeout(function () { splash.parentNode.removeChild(splash); }, 500);
+}, 2200);
+
+if (!configured()) $('config-warning').classList.add('show');
+if (currentUser()) enterApp();
+else showScreen('login');
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(function () {});
+}
+</script>
+</body>
+</html>
