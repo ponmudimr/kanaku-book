@@ -404,6 +404,27 @@
   }
   #amount:focus { border-color: var(--maroon); }
 
+  .note-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip {
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--maroon);
+    background: var(--paper-card);
+    border: 1.5px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: transform 0.06s ease;
+  }
+  .chip:active { transform: scale(0.94); }
+  .chip.selected {
+    background: var(--maroon);
+    border-color: var(--maroon-dark);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(110, 27, 32, 0.3);
+  }
+
   .status-line {
     min-height: 20px;
     margin: 10px 2px 0;
@@ -582,7 +603,7 @@
     <button type="submit" class="btn" id="login-btn">Log in</button>
     <div class="error-msg" id="login-error"></div>
   </form>
-  <div class="dev-credit">Developed by Ponmudi MR · <span id="app-version">v14</span></div>
+  <div class="dev-credit">Developed by Ponmudi MR · <span id="app-version">v15</span></div>
 </section>
 
 <!-- ================= MAIN ================= -->
@@ -591,7 +612,7 @@
     <div>
       <div class="brand">₹ Kanaku Book</div>
       <div class="who" id="who"></div>
-      <div class="who">v14</div>
+      <div class="who">v15</div>
     </div>
     <button class="logout-btn" id="logout-btn">Log out</button>
   </header>
@@ -618,6 +639,10 @@
 
     <label for="note" style="margin-top:16px">Note (optional)</label>
     <input type="text" id="note" placeholder="e.g. advance, diesel, materials" autocomplete="off">
+    <div class="note-chips">
+      <button type="button" class="chip" data-note="Cash">💵 CASH</button>
+      <button type="button" class="chip" data-note="GPay">📱 GPAY</button>
+    </div>
 
     <label for="entry-date" style="margin-top:16px">Date</label>
     <input type="date" id="entry-date">
@@ -916,6 +941,34 @@ function escapeHtml(s) {
 
 $('amount').addEventListener('input', updateSaveState);
 
+/* Quick note chips (Cash / GPay): tap to add the word to the note, tap
+   again to remove it. Picking one payment mode replaces the other. */
+var noteChips = document.querySelectorAll('.note-chips .chip');
+function noteParts() {
+  return $('note').value.split(',').map(function (p) { return p.trim(); }).filter(Boolean);
+}
+function updateNoteChips() {
+  var parts = noteParts().map(function (p) { return p.toLowerCase(); });
+  noteChips.forEach(function (c) {
+    c.classList.toggle('selected', parts.indexOf(c.dataset.note.toLowerCase()) !== -1);
+  });
+}
+noteChips.forEach(function (chip) {
+  chip.addEventListener('click', function () {
+    var word = chip.dataset.note;
+    var had = noteParts().some(function (p) { return p.toLowerCase() === word.toLowerCase(); });
+    // drop every chip word (only one payment mode at a time), keep typed text
+    var parts = noteParts().filter(function (p) {
+      var low = p.toLowerCase();
+      return !Array.prototype.some.call(noteChips, function (c) { return c.dataset.note.toLowerCase() === low; });
+    });
+    if (!had) parts.push(word);
+    $('note').value = parts.join(', ');
+    updateNoteChips();
+  });
+});
+$('note').addEventListener('input', updateNoteChips);
+
 $('save-btn').addEventListener('click', function () {
   var amt = parseAmount();
   if (!selectedMember || amt === null) return;
@@ -950,6 +1003,7 @@ $('save-btn').addEventListener('click', function () {
   // reset for the next entry
   $('amount').value = '';
   $('note').value = '';
+  updateNoteChips();
   setToday();
   selectedMember = null;
   renderMembers(getCachedMembers());
