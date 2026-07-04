@@ -1,0 +1,77 @@
+KANAKU BOOK (SM TEX) — VERSION HISTORY
+=======================================
+
+The app version is shown at the bottom of the login screen and in the
+top bar. It matches CACHE_NAME in sw.js; all three must be bumped
+together whenever index.html changes (see README).
+
+
+EARLY VERSIONS (v1 – v11)
+-------------------------
+Built up the core app, roughly in this order:
+- Initial app: login, member buttons, amount + note + date entry,
+  save to Google Sheet via Apps Script
+- Stay logged in until explicit logout
+- Developer credit on login page
+- Ledger view: member totals, month/date search
+- From–to date range search and tabular entries view
+- Recent list shows last 10 entries from all users
+- Gate saving on recent entries load; timezone, JSONP timeout and
+  ledger drilldown fixes
+- Opening splash animation with designer credit
+- Service worker: serve latest page on every open, cache only as
+  offline fallback
+- Bigger designer credit on splash
+- Entry delete from recent list, with confirmation
+- Block new entries until a confirmed delete lands in the sheet
+- Require typing "delete" to confirm entry deletion
+
+v12
+---
+- Show the app version on the login and main screens (this system)
+
+v13  (2026-07-04)
+-----------------
+- New app logo: "SM TEX" wordmark (cream serif on maroon ruled
+  background) replacing the ₹ icon — splash, login, home-screen icon
+- Repo cleanup: MIT license, professional README, setup guide moved
+  to docs/SETUP.md
+
+v14  (2026-07-04)
+-----------------
+- Layout made resilient to phone font-size / display-size settings:
+  * member grid adapts 3 -> 2 columns on narrow or font-scaled screens,
+    buttons keep even height
+  * top bar title and Log out button can no longer collide
+  * ledger entries table scrolls sideways instead of being clipped
+  * big total amount scales down instead of overflowing
+  * popups sized to the screen; their buttons wrap
+  * browser told not to inflate text on top of the OS font setting
+
+v15  (2026-07-04)
+-----------------
+- Quick note chips on the New entry form: CASH and GPAY
+  * tap to add the word to the note, tap again to remove
+  * picking one payment mode replaces the other
+  * typed text is kept (e.g. "advance, GPay")
+  * chips reset after each save
+
+v16  (2026-07-04)
+-----------------
+- Attendance/shift module (separate page attendance.html):
+  * Day (8am–8pm) and Night (8pm–8am) shifts, four places in Tamil:
+    வீடு, பழைய மேற்கு, புதிய மேற்கு, தெற்கு
+  * assign one member per place from a bottom-sheet picker
+  * same person cannot take two places in the same shift;
+    day + night double shift at different places is allowed
+  * monthly summary: shifts worked per member (double shift = 2)
+  * auto-scrolls to Night section after 8pm
+  * shares the login session with the main app
+- Backend: Places and Attendance tabs auto-created; new actions
+  getPlaces, getAttendance, saveAttendance, getAttendanceSummary
+- "Shifts" button added to the main top bar
+
+v17  (2026-07-05)
+-----------------
+- "Shifts" button removed from the top bar for now (attendance.html
+  and its backend stay in place; re-adding the button is one line)
