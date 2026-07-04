@@ -2,10 +2,11 @@
    Caches the app shell so the app opens instantly (and offline).
    Bump CACHE_NAME whenever you change index.html to force an update. */
 
-const CACHE_NAME = 'kanaku-book-v15';
+const CACHE_NAME = 'kanaku-book-v16';
 const SHELL = [
   './',
   './index.html',
+  './attendance.html',
   './manifest.json',
   './icon.png',
   './icon-192.png'

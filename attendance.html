@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Attendance — Kanaku Book</title>
+<meta name="theme-color" content="#6e1b20">
+<link rel="icon" type="image/png" href="icon-192.png">
+
+<style>
+  :root {
+    --maroon: #6e1b20;
+    --maroon-dark: #551216;
+    --paper: #f7f0e3;
+    --paper-card: #fffbf2;
+    --ink: #33291f;
+    --ink-soft: #7a6f60;
+    --line: #e5d9c3;
+    --rule: #efe4cd;
+    --green: #2e7d4f;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    background-image: repeating-linear-gradient(
+      to bottom, transparent, transparent 31px, rgba(110, 27, 32, 0.045) 31px, rgba(110, 27, 32, 0.045) 32px
+    );
+  }
+
+  h1, h2, .brand { font-family: Georgia, "Times New Roman", serif; }
+
+  header.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--maroon);
+    color: #fff;
+    padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    box-shadow: 0 2px 8px rgba(85, 18, 22, 0.3);
+  }
+  header.topbar > div:first-child { min-width: 0; }
+  header .brand { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; line-height: 1.2; }
+  header .who { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+  .back-link {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 999px;
+    text-decoration: none;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  main { max-width: 520px; margin: 0 auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    background: var(--rule);
+    border-radius: 12px;
+    padding: 5px;
+  }
+  .tab {
+    flex: 1;
+    min-width: 0;
+    padding: 11px 4px;
+    font-size: 15px;
+    line-height: 1.25;
+    font-weight: 700;
+    color: var(--ink-soft);
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+  }
+  .tab.active {
+    background: var(--maroon);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(110, 27, 32, 0.3);
+  }
+
+  label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-soft); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  input[type="date"], input[type="month"] {
+    width: 100%;
+    padding: 14px;
+    font-size: 17px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--ink);
+    outline: none;
+    font-family: inherit;
+  }
+  input:focus { border-color: var(--maroon); }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 18px 2px 10px;
+  }
+  .section-title h2 { margin: 0; font-size: 16px; color: var(--maroon); }
+  .section-title .hours { font-size: 12px; color: var(--ink-soft); font-weight: 600; white-space: nowrap; }
+
+  .shift-card {
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .place-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .place-row:last-child { border-bottom: none; }
+  .p-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 700;
+    font-size: 15px;
+    overflow-wrap: anywhere;
+  }
+  .p-pick {
+    flex: 1.4;
+    min-width: 0;
+    padding: 11px 10px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--ink-soft);
+    background: #fff;
+    border: 1.5px dashed var(--line);
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: center;
+    overflow-wrap: anywhere;
+    transition: transform 0.06s ease;
+  }
+  .p-pick:active { transform: scale(0.97); }
+  .p-pick.assigned {
+    color: #fff;
+    background: var(--maroon);
+    border: 1.5px solid var(--maroon-dark);
+    box-shadow: 0 2px 6px rgba(110, 27, 32, 0.25);
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    margin-top: 20px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--maroon);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--maroon-dark);
+  }
+  .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--maroon-dark); }
+  .btn:disabled { opacity: 0.45; box-shadow: none; transform: none; }
+  .btn.ghost { background: transparent; color: var(--maroon); border: 1.5px solid var(--maroon); box-shadow: none; }
+
+  .status-line {
+    min-height: 20px;
+    margin: 10px 2px 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+    text-align: center;
+  }
+  .status-line b { color: var(--maroon); }
+
+  /* ---------- member picker sheet ---------- */
+  #picker-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: none;
+    align-items: flex-end; justify-content: center;
+    background: rgba(51, 41, 31, 0.45);
+  }
+  #picker-overlay.show { display: flex; }
+  .sheet {
+    background: var(--paper-card);
+    width: 100%;
+    max-width: 520px;
+    max-height: 80dvh;
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    padding: 22px 20px calc(26px + env(safe-area-inset-bottom));
+    animation: slide-up 0.22s ease;
+  }
+  @keyframes slide-up { from { transform: translateY(40%); } to { transform: translateY(0); } }
+  .sheet h2 { margin: 0 0 4px; font-size: 18px; color: var(--maroon); }
+  .sheet .sub { margin: 0 0 14px; font-size: 13px; color: var(--ink-soft); }
+  .mem-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(104px, 100%), 1fr));
+    gap: 10px;
+  }
+  .mem-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    min-width: 0;
+    padding: 8px 6px;
+    font-size: 14px;
+    line-height: 1.25;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--ink);
+    background: #fff;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    overflow-wrap: anywhere;
+    transition: transform 0.06s ease;
+  }
+  .mem-btn:active { transform: scale(0.96); }
+  .mem-btn.current {
+    background: var(--maroon);
+    border-color: var(--maroon-dark);
+    color: #fff;
+  }
+  .mem-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+    background: var(--rule);
+  }
+  .mem-btn .busy-note { font-size: 10.5px; font-weight: 400; color: inherit; opacity: 0.8; }
+  .sheet-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .sheet-actions .btn { margin-top: 0; flex: 1 1 120px; }
+
+  /* ---------- summary ---------- */
+  .card {
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(85, 18, 22, 0.06);
+  }
+  .ledger {
+    background: var(--paper-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    overflow-x: auto;
+  }
+  .sum-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .sum-table th {
+    background: var(--rule);
+    color: var(--maroon);
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .sum-table th.num, .sum-table td.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .sum-table td { padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+  .sum-table tr:last-child td { border-bottom: none; }
+  .sum-table td.num { font-weight: 700; color: var(--maroon); }
+  .ledger-empty { padding: 20px; text-align: center; color: var(--ink-soft); font-size: 14px; }
+
+  /* ---------- save confirmation (same as main app) ---------- */
+  #save-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    display: none;
+    align-items: center; justify-content: center;
+    background: rgba(51, 41, 31, 0.45);
+    backdrop-filter: blur(2px);
+  }
+  #save-overlay.show { display: flex; }
+  .save-pop {
+    background: var(--paper-card);
+    border-radius: 20px;
+    padding: 30px 36px;
+    text-align: center;
+    animation: pop-in 0.28s cubic-bezier(0.2, 1.4, 0.4, 1);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    max-width: min(300px, 86vw);
+  }
+  @keyframes pop-in {
+    from { transform: scale(0.6); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .save-pop .msg { font-size: 20px; font-weight: 700; color: var(--maroon); margin-top: 10px; font-family: Georgia, serif; }
+  .save-pop .who-line { color: var(--ink-soft); font-size: 15px; margin-top: 2px; }
+  .check-svg { width: 76px; height: 76px; }
+  .check-svg circle {
+    fill: none; stroke: var(--green); stroke-width: 3;
+    stroke-dasharray: 166; stroke-dashoffset: 166;
+    animation: draw 0.5s ease forwards;
+  }
+  .check-svg path {
+    fill: none; stroke: var(--green); stroke-width: 4;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 48; stroke-dashoffset: 48;
+    animation: draw 0.35s 0.35s ease forwards;
+  }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2.5px solid rgba(255, 255, 255, 0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: -4px;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .fineprint { margin: 10px 4px 0; font-size: 12px; color: var(--ink-soft); text-align: center; }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div>
+    <div class="brand">🗓️ Attendance</div>
+    <div class="who" id="who"></div>
+  </div>
+  <a class="back-link" href="index.html">← Kanaku Book</a>
+</header>
+
+<main>
+  <div class="tabs">
+    <button type="button" class="tab active" id="tab-assign">✏️ Assign</button>
+    <button type="button" class="tab" id="tab-summary">📊 Summary</button>
+  </div>
+
+  <!-- ===== Assign view ===== -->
+  <div id="view-assign">
+    <label for="att-date">Date</label>
+    <input type="date" id="att-date">
+
+    <div class="section-title" id="day-section">
+      <h2>☀️ Day shift</h2><span class="hours">8am – 8pm</span>
+    </div>
+    <div class="shift-card" id="day-card"></div>
+
+    <div class="section-title" id="night-section">
+      <h2>🌙 Night shift</h2><span class="hours">8pm – 8am</span>
+    </div>
+    <div class="shift-card" id="night-card"></div>
+
+    <button class="btn" id="save-btn" disabled>Save attendance</button>
+    <div class="status-line" id="status-line"></div>
+    <p class="fineprint">Not assigned to any place = didn't work that day.</p>
+  </div>
+
+  <!-- ===== Summary view ===== -->
+  <div id="view-summary" hidden>
+    <div class="card">
+      <label for="sum-month">Month</label>
+      <input type="month" id="sum-month">
+      <button type="button" class="btn" id="sum-btn">Show summary</button>
+    </div>
+    <div class="section-title"><h2>Shifts worked per member</h2></div>
+    <div class="ledger" id="sum-table"></div>
+    <div class="status-line" id="sum-status"></div>
+    <p class="fineprint">Full shift = 1. A day + night double shift counts as 2.</p>
+  </div>
+</main>
+
+<!-- Member picker -->
+<div id="picker-overlay">
+  <div class="sheet">
+    <h2 id="picker-title"></h2>
+    <p class="sub" id="picker-sub"></p>
+    <div class="mem-grid" id="picker-grid"></div>
+    <div class="sheet-actions">
+      <button type="button" class="btn ghost" id="picker-clear">✕ Clear</button>
+      <button type="button" class="btn ghost" id="picker-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Save confirmation -->
+<div id="save-overlay">
+  <div class="save-pop">
+    <svg class="check-svg" viewBox="0 0 56 56">
+      <circle cx="28" cy="28" r="26"/>
+      <path d="M16 29 l8 8 l16 -17"/>
+    </svg>
+    <div class="msg">Attendance saved</div>
+    <div class="who-line" id="saved-line"></div>
+  </div>
+</div>
+
+<script>
+/* Same backend as index.html — keep this URL identical to SCRIPT_URL there. */
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxsdjIyGqQZnZeTPX5tO6bwh71zzuq4N7LpWsgx937noIWK28CgFR0kDQaQv0QOBrxvwA/exec';
+
+var $ = function (id) { return document.getElementById(id); };
+
+/* shared login session with the main app */
+function currentUser() { return localStorage.getItem('kanaku_user') || ''; }
+if (!currentUser()) { location.replace('index.html'); }
+
+function configured() {
+  return SCRIPT_URL.indexOf('https://') === 0;
+}
+
+/* JSONP reads — same pattern as index.html */
+function jsonp(params, timeoutMs) {
+  timeoutMs = timeoutMs || 15000;
+  return new Promise(function (resolve, reject) {
+    if (!configured()) { reject(new Error('App not set up yet — see README')); return; }
+    var cbName = 'kanaku_cb_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
+    var script = document.createElement('script');
+    var timer = setTimeout(function () { cleanup(); reject(new Error('No answer from Google. Check your internet.')); }, timeoutMs);
+    function cleanup() {
+      clearTimeout(timer);
+      window[cbName] = function () { delete window[cbName]; };
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function (data) { cleanup(); resolve(data); };
+    var qs = Object.keys(params).map(function (k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    script.src = SCRIPT_URL + '?' + qs + '&callback=' + cbName;
+    script.onerror = function () { cleanup(); reject(new Error('No answer from Google. Check your internet.')); };
+    document.body.appendChild(script);
+  });
+}
+
+/* Fire-and-forget write — same pattern as index.html */
+function postWrite(body) {
+  if (!configured()) return Promise.reject(new Error('App not set up yet'));
+  return fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+/* ---------------- state ---------------- */
+var SHIFTS = ['Day', 'Night'];
+var DEFAULT_PLACES = ['வீடு', 'பழைய மேற்கு', 'புதிய மேற்கு', 'தெற்கு'];
+
+function getPlaces() {
+  try { return JSON.parse(localStorage.getItem('kanaku_places')) || DEFAULT_PLACES; }
+  catch (e) { return DEFAULT_PLACES; }
+}
+
+function getMembers() {
+  try { return JSON.parse(localStorage.getItem('kanaku_members')) || []; }
+  catch (e) { return []; }
+}
+
+/* assignments for the loaded date: assign[shift][place] = member name */
+var assign = { Day: {}, Night: {} };
+var attLoaded = false; // saving unlocks once today's rows have been fetched
+var dirty = false;
+
+function isoToday() {
+  var d = new Date();
+  return d.getFullYear() + '-' +
+    ((d.getMonth() < 9 ? '0' : '') + (d.getMonth() + 1)) + '-' +
+    ((d.getDate() < 10 ? '0' : '') + d.getDate());
+}
+function ddmmyyyy(iso) { return iso ? iso.split('-').reverse().join('/') : ''; }
+
+/* ---------------- assign view ---------------- */
+function renderShifts() {
+  var places = getPlaces();
+  SHIFTS.forEach(function (shift) {
+    var card = $(shift === 'Day' ? 'day-card' : 'night-card');
+    card.innerHTML = '';
+    places.forEach(function (place) {
+      var row = document.createElement('div');
+      row.className = 'place-row';
+      var name = document.createElement('span');
+      name.className = 'p-name';
+      name.textContent = place;
+      var pick = document.createElement('button');
+      pick.type = 'button';
+      pick.className = 'p-pick';
+      var member = assign[shift][place] || '';
+      if (member) {
+        pick.classList.add('assigned');
+        pick.textContent = member;
+      } else {
+        pick.textContent = 'Select member ▾';
+      }
+      pick.addEventListener('click', function () { openPicker(shift, place); });
+      row.appendChild(name);
+      row.appendChild(pick);
+      card.appendChild(row);
+    });
+  });
+  updateSaveState();
+}
+
+function updateSaveState() {
+  $('save-btn').disabled = !(attLoaded && dirty);
+  var s = $('status-line');
+  if (!attLoaded) s.innerHTML = 'Loading attendance for <b>' + escapeHtml(ddmmyyyy($('att-date').value)) + '</b>…';
+  else if (dirty) s.innerHTML = 'Unsaved changes — tap <b>Save attendance</b>';
+  else s.textContent = 'Tap a place to assign a member';
+}
+
+function loadAttendance() {
+  var date = $('att-date').value;
+  assign = { Day: {}, Night: {} };
+  attLoaded = false;
+  dirty = false;
+  renderShifts();
+  if (!date || !configured()) return;
+  jsonp({ action: 'getAttendance', date: date }).then(function (res) {
+    if (date !== $('att-date').value) return; // the date changed meanwhile
+    if (res && res.ok && res.attendance) {
+      assign = { Day: {}, Night: {} };
+      res.attendance.forEach(function (r) {
+        if (assign[r.shift] && r.place && r.member) assign[r.shift][r.place] = r.member;
+      });
+      attLoaded = true;
+      dirty = false;
+      renderShifts();
+    } else {
+      $('status-line').textContent = (res && res.error) ? res.error : 'Could not load attendance.';
+    }
+  }).catch(function (err) {
+    if (date !== $('att-date').value) return;
+    $('status-line').textContent = err.message;
+  });
+}
+
+$('att-date').addEventListener('change', function () {
+  if (dirty && !confirm('Discard unsaved changes for this date?')) return;
+  loadAttendance();
+});
+
+/* ---------------- member picker ---------------- */
+var pickShift = '';
+var pickPlace = '';
+
+function openPicker(shift, place) {
+  pickShift = shift;
+  pickPlace = place;
+  $('picker-title').textContent = place;
+  $('picker-sub').textContent = (shift === 'Day' ? '☀️ Day shift (8am – 8pm) · ' : '🌙 Night shift (8pm – 8am) · ') + ddmmyyyy($('att-date').value);
+
+  var grid = $('picker-grid');
+  grid.innerHTML = '';
+  var current = assign[shift][place] || '';
+  var members = getMembers();
+  if (!members.length) {
+    var empty = document.createElement('div');
+    empty.className = 'ledger-empty';
+    empty.textContent = 'No members yet — open Kanaku Book once to load them.';
+    grid.appendChild(empty);
+  }
+  members.forEach(function (m) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'mem-btn';
+    b.textContent = m;
+    // one person cannot be at two places in the SAME shift
+    var busyAt = '';
+    getPlaces().forEach(function (p) {
+      if (p !== place && assign[shift][p] === m) busyAt = p;
+    });
+    if (m === current) b.classList.add('current');
+    if (busyAt) {
+      b.disabled = true;
+      var note = document.createElement('span');
+      note.className = 'busy-note';
+      note.textContent = 'already at ' + busyAt;
+      b.appendChild(note);
+    } else {
+      b.addEventListener('click', function () {
+        assign[pickShift][pickPlace] = m;
+        dirty = true;
+        closePicker();
+        renderShifts();
+      });
+    }
+    grid.appendChild(b);
+  });
+  $('picker-clear').style.display = current ? '' : 'none';
+  $('picker-overlay').classList.add('show');
+}
+
+function closePicker() { $('picker-overlay').classList.remove('show'); }
+
+$('picker-cancel').addEventListener('click', closePicker);
+$('picker-overlay').addEventListener('click', function (ev) {
+  if (ev.target === $('picker-overlay')) closePicker();
+});
+$('picker-clear').addEventListener('click', function () {
+  delete assign[pickShift][pickPlace];
+  dirty = true;
+  closePicker();
+  renderShifts();
+});
+
+/* ---------------- save ---------------- */
+$('save-btn').addEventListener('click', function () {
+  var date = $('att-date').value;
+  if (!date || !attLoaded) return;
+
+  // send every slot; empty member clears that slot in the sheet
+  var assignments = [];
+  SHIFTS.forEach(function (shift) {
+    getPlaces().forEach(function (place) {
+      assignments.push({ date: date, shift: shift, place: place, member: assign[shift][place] || '' });
+    });
+  });
+  postWrite({ action: 'saveAttendance', assignments: assignments, markedBy: currentUser() }).catch(function () {});
+
+  dirty = false;
+  showSaveAnimation(date);
+  updateSaveState();
+  setTimeout(loadAttendance, 8000); // re-sync once the write has landed
+});
+
+function showSaveAnimation(date) {
+  $('saved-line').textContent = 'for ' + ddmmyyyy(date);
+  var overlay = $('save-overlay');
+  var svg = overlay.querySelector('.check-svg');
+  var clone = svg.cloneNode(true);
+  svg.parentNode.replaceChild(clone, svg);
+  overlay.classList.add('show');
+  if (navigator.vibrate) navigator.vibrate(40);
+  setTimeout(function () { overlay.classList.remove('show'); }, 1500);
+}
+
+/* ---------------- summary view ---------------- */
+function setView(name) {
+  $('tab-assign').classList.toggle('active', name === 'assign');
+  $('tab-summary').classList.toggle('active', name === 'summary');
+  $('view-assign').hidden = name !== 'assign';
+  $('view-summary').hidden = name !== 'summary';
+  if (name === 'summary' && !$('sum-table').innerHTML) loadSummary();
+}
+$('tab-assign').addEventListener('click', function () { setView('assign'); });
+$('tab-summary').addEventListener('click', function () { setView('summary'); });
+
+$('sum-btn').addEventListener('click', loadSummary);
+
+function loadSummary() {
+  var month = $('sum-month').value;
+  if (!month) return;
+  var btn = $('sum-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Loading…';
+  $('sum-status').textContent = '';
+
+  jsonp({ action: 'getAttendanceSummary', month: month }, 25000).then(function (res) {
+    btn.disabled = false;
+    btn.textContent = 'Show summary';
+    if (res && res.ok && res.summary) renderSummary(res.summary);
+    else $('sum-status').textContent = (res && res.error) ? res.error : 'Could not load the summary.';
+  }).catch(function (err) {
+    btn.disabled = false;
+    btn.textContent = 'Show summary';
+    $('sum-status').textContent = err.message;
+  });
+}
+
+function renderSummary(rows) {
+  var box = $('sum-table');
+  if (!rows.length) {
+    box.innerHTML = '<div class="ledger-empty">No shifts recorded for this month yet.</div>';
+    return;
+  }
+  var html = '<table class="sum-table"><tr><th>Member</th><th class="num">Shifts</th></tr>';
+  rows.forEach(function (r) {
+    html += '<tr><td>' + escapeHtml(r.member) + '</td><td class="num">' + r.shifts + '</td></tr>';
+  });
+  box.innerHTML = html + '</table>';
+}
+
+/* ---------------- init ---------------- */
+$('who').textContent = 'Marked by ' + currentUser();
+$('att-date').value = isoToday();
+$('sum-month').value = isoToday().slice(0, 7);
+
+// refresh the shared members/places caches from the sheet
+jsonp({ action: 'getMembers' }).then(function (res) {
+  if (res && res.ok && res.members) {
+    localStorage.setItem('kanaku_members', JSON.stringify(res.members));
+  }
+}).catch(function () {});
+jsonp({ action: 'getPlaces' }).then(function (res) {
+  if (res && res.ok && res.places && res.places.length) {
+    localStorage.setItem('kanaku_places', JSON.stringify(res.places));
+    renderShifts();
+  }
+}).catch(function () {});
+
+renderShifts();
+loadAttendance();
+
+// working hours start at 8pm: jump straight to the night section in the evening
+if (new Date().getHours() >= 20) {
+  setTimeout(function () {
+    $('night-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 300);
+}
+</script>
+</body>
+</html>

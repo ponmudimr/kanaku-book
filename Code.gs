@@ -18,7 +18,9 @@
 var TABS = {
   users:   { name: 'Users',   headers: ['Username', 'Password'] },
   members: { name: 'Members', headers: ['Name'] },
-  entries: { name: 'Entries', headers: ['Timestamp', 'Date', 'Name', 'Amount', 'Note', 'LoggedBy', 'Id'] }
+  entries: { name: 'Entries', headers: ['Timestamp', 'Date', 'Name', 'Amount', 'Note', 'LoggedBy', 'Id'] },
+  places:  { name: 'Places',  headers: ['Place'] },
+  attendance: { name: 'Attendance', headers: ['Timestamp', 'Date', 'Shift', 'Place', 'Member', 'MarkedBy'] }
 };
 
 // 12 placeholder members seeded when the Members tab is first created.
@@ -28,6 +30,9 @@ var PLACEHOLDER_MEMBERS = [
   'Member 5', 'Member 6', 'Member 7', 'Member 8',
   'Member 9', 'Member 10', 'Member 11', 'Member 12'
 ];
+
+// Work places seeded when the Places tab is first created (edit in the sheet).
+var DEFAULT_PLACES = ['வீடு', 'பழைய மேற்கு', 'புதிய மேற்கு', 'தெற்கு'];
 
 /** Returns the tab, creating it with headers (and seed data) if missing. */
 function getSheet_(tab) {
@@ -40,6 +45,9 @@ function getSheet_(tab) {
     sheet.setFrozenRows(1);
     if (tab.name === 'Members') {
       PLACEHOLDER_MEMBERS.forEach(function (name) { sheet.appendRow([name]); });
+    }
+    if (tab.name === 'Places') {
+      DEFAULT_PLACES.forEach(function (place) { sheet.appendRow([place]); });
     }
   }
   return sheet;
@@ -58,6 +66,12 @@ function doGet(e) {
       result = { ok: true, members: getMembers_() };
     } else if (action === 'getEntries') {
       result = { ok: true, entries: getEntries_(params.from, params.to, params.limit) };
+    } else if (action === 'getPlaces') {
+      result = { ok: true, places: getPlaces_() };
+    } else if (action === 'getAttendance') {
+      result = { ok: true, attendance: getAttendance_(params.date) };
+    } else if (action === 'getAttendanceSummary') {
+      result = { ok: true, summary: getAttendanceSummary_(params.month) };
     } else if (action === 'ping') {
       result = { ok: true, pong: true };
     } else {
@@ -92,6 +106,9 @@ function doPost(e) {
       result = { ok: true };
     } else if (action === 'deleteEntry') {
       deleteEntry_(body);
+      result = { ok: true };
+    } else if (action === 'saveAttendance') {
+      saveAttendance_(body);
       result = { ok: true };
     } else {
       result = { ok: false, error: 'Unknown action: ' + action };
@@ -253,4 +270,123 @@ function deleteEntry_(body) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/* ==================== attendance ==================== */
+
+function getPlaces_() {
+  var sheet = getSheet_(TABS.places);
+  var rows = sheet.getDataRange().getValues();
+  var places = [];
+  for (var i = 1; i < rows.length; i++) {
+    var place = String(rows[i][0]).trim();
+    if (place) places.push(place);
+  }
+  return places;
+}
+
+/** Normalizes a Date cell (or string) to yyyy-MM-dd in the sheet's timezone. */
+function isoDate_(value, tz) {
+  if (value instanceof Date) return Utilities.formatDate(value, tz, 'yyyy-MM-dd');
+  return String(value || '');
+}
+
+/** Returns the shift assignments saved for one date. */
+function getAttendance_(date) {
+  date = String(date || '');
+  if (!date) return [];
+  var sheet = getSheet_(TABS.attendance);
+  var rows = sheet.getDataRange().getValues();
+  var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+  var out = [];
+  for (var i = 1; i < rows.length; i++) {
+    if (isoDate_(rows[i][1], tz) !== date) continue;
+    out.push({
+      shift: String(rows[i][2] || ''),
+      place: String(rows[i][3] || ''),
+      member: String(rows[i][4] || '').trim(),
+      by: String(rows[i][5] || '')
+    });
+  }
+  return out;
+}
+
+/**
+ * Saves a batch of shift assignments. Each item: {date, shift, place, member}.
+ * One row per Date+Shift+Place: existing rows are updated in place, missing
+ * ones appended, and an empty member clears (deletes) the row.
+ */
+function saveAttendance_(body) {
+  var list = body.assignments || [];
+  if (!list.length) return;
+  var markedBy = String(body.markedBy || '');
+
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = getSheet_(TABS.attendance);
+    var rows = sheet.getDataRange().getValues();
+    var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+
+    // index existing rows by date|shift|place (last row wins on duplicates)
+    var index = {};
+    for (var i = 1; i < rows.length; i++) {
+      var key = isoDate_(rows[i][1], tz) + '|' + String(rows[i][2] || '') + '|' + String(rows[i][3] || '');
+      index[key] = i;
+    }
+
+    var toDelete = [];
+    for (var j = 0; j < list.length; j++) {
+      var a = list[j] || {};
+      var date = String(a.date || '');
+      var shift = String(a.shift || '');
+      var place = String(a.place || '');
+      var member = String(a.member || '').trim();
+      if (!date || !shift || !place) continue;
+
+      var existing = index[date + '|' + shift + '|' + place];
+      if (member) {
+        if (existing !== undefined) {
+          sheet.getRange(existing + 1, 5).setValue(member);   // Member column
+          sheet.getRange(existing + 1, 6).setValue(markedBy); // MarkedBy column
+          sheet.getRange(existing + 1, 1).setValue(new Date());
+        } else {
+          sheet.appendRow([new Date(), date, shift, place, member, markedBy]);
+        }
+      } else if (existing !== undefined) {
+        toDelete.push(existing);
+      }
+    }
+
+    // delete bottom-up so earlier row numbers stay valid
+    toDelete.sort(function (a, b) { return b - a; });
+    for (var k = 0; k < toDelete.length; k++) {
+      sheet.deleteRow(toDelete[k] + 1);
+    }
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/**
+ * Per-member shift counts for one month (yyyy-MM). A full shift counts as 1,
+ * so a day+night double shift on the same date counts as 2.
+ */
+function getAttendanceSummary_(month) {
+  month = String(month || '');
+  if (!/^\d{4}-\d{2}$/.test(month)) return [];
+  var sheet = getSheet_(TABS.attendance);
+  var rows = sheet.getDataRange().getValues();
+  var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+  var counts = {};
+  for (var i = 1; i < rows.length; i++) {
+    if (isoDate_(rows[i][1], tz).slice(0, 7) !== month) continue;
+    var member = String(rows[i][4] || '').trim();
+    if (!member) continue;
+    counts[member] = (counts[member] || 0) + 1;
+  }
+  var out = [];
+  for (var name in counts) out.push({ member: name, shifts: counts[name] });
+  out.sort(function (a, b) { return b.shifts - a.shifts || (a.member < b.member ? -1 : 1); });
+  return out;
 }
