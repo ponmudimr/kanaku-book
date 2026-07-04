@@ -38,6 +38,9 @@
     color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", sans-serif;
     font-size: 16px;
+    /* keep browsers from inflating text on top of the OS font-size setting */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   body {
@@ -201,9 +204,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
     box-shadow: 0 2px 8px rgba(85, 18, 22, 0.3);
   }
-  header .brand { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+  header.topbar > div:first-child { min-width: 0; }
+  header .brand { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; line-height: 1.2; }
   header .who { font-size: 12px; opacity: 0.85; margin-top: 2px; }
   .logout-btn {
     background: rgba(255, 255, 255, 0.14);
@@ -214,6 +219,8 @@
     padding: 8px 14px;
     border-radius: 999px;
     cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   main { max-width: 520px; margin: 0 auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
@@ -228,8 +235,10 @@
   }
   .tab {
     flex: 1;
-    padding: 11px 6px;
+    min-width: 0;
+    padding: 11px 4px;
     font-size: 15px;
+    line-height: 1.25;
     font-weight: 700;
     color: var(--ink-soft);
     background: transparent;
@@ -271,7 +280,7 @@
     box-shadow: 0 4px 14px rgba(110, 27, 32, 0.35);
   }
   .total-card .t-label { font-size: 13px; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.08em; }
-  .total-card .t-amt { font-size: 34px; font-weight: 800; font-family: Georgia, serif; margin-top: 4px; }
+  .total-card .t-amt { font-size: clamp(24px, 9vw, 34px); font-weight: 800; font-family: Georgia, serif; margin-top: 4px; overflow-wrap: anywhere; }
   .total-card .t-sub { font-size: 13px; opacity: 0.85; margin-top: 4px; }
 
   .mt-row {
@@ -338,12 +347,20 @@
 
   .member-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    /* adapts: 3 columns on normal phones, 2 when large fonts / narrow screens
+       shrink the usable width, so buttons never get crushed or uneven */
+    grid-template-columns: repeat(auto-fill, minmax(min(104px, 100%), 1fr));
     gap: 10px;
   }
   .member-btn {
-    padding: 14px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    min-width: 0;
+    padding: 10px 6px;
     font-size: 15px;
+    line-height: 1.25;
     font-weight: 600;
     color: var(--ink);
     background: var(--paper-card);
@@ -351,7 +368,7 @@
     border-radius: 12px;
     cursor: pointer;
     text-align: center;
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
     transition: transform 0.06s ease;
   }
   .member-btn:active { transform: scale(0.96); }
@@ -402,6 +419,8 @@
     border: 1px solid var(--line);
     border-radius: var(--radius);
     overflow: hidden;
+    /* wide content (entries table) scrolls sideways instead of being clipped */
+    overflow-x: auto;
   }
   .ledger-row {
     display: flex;
@@ -447,7 +466,7 @@
     text-align: center;
     animation: pop-in 0.28s cubic-bezier(0.2, 1.4, 0.4, 1);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-    max-width: 300px;
+    max-width: min(300px, 86vw);
   }
   @keyframes pop-in {
     from { transform: scale(0.6); opacity: 0; }
@@ -487,8 +506,8 @@
   }
   @keyframes slide-up { from { transform: translateY(40%); } to { transform: translateY(0); } }
   .sheet h2 { margin: 0 0 14px; font-size: 18px; color: var(--maroon); }
-  .sheet-actions { display: flex; gap: 10px; margin-top: 16px; }
-  .sheet-actions .btn { margin-top: 0; flex: 1; }
+  .sheet-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .sheet-actions .btn { margin-top: 0; flex: 1 1 120px; }
   .btn.ghost { background: transparent; color: var(--maroon); border: 1.5px solid var(--maroon); box-shadow: none; }
   .btn.danger { background: #a4262c; box-shadow: 0 3px 0 #7c1216; }
 
@@ -563,7 +582,7 @@
     <button type="submit" class="btn" id="login-btn">Log in</button>
     <div class="error-msg" id="login-error"></div>
   </form>
-  <div class="dev-credit">Developed by Ponmudi MR · <span id="app-version">v13</span></div>
+  <div class="dev-credit">Developed by Ponmudi MR · <span id="app-version">v14</span></div>
 </section>
 
 <!-- ================= MAIN ================= -->
@@ -572,7 +591,7 @@
     <div>
       <div class="brand">₹ Kanaku Book</div>
       <div class="who" id="who"></div>
-      <div class="who">v13</div>
+      <div class="who">v14</div>
     </div>
     <button class="logout-btn" id="logout-btn">Log out</button>
   </header>
